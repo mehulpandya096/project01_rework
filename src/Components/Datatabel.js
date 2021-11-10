@@ -7,14 +7,25 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import { useHistory } from "react-router";
 
 export const Datatabel = () => {
+  const history = useHistory();
+  const loginStatus = () => {
+    const item = localStorage.getItem("token");
+    if (item === null) {
+      history.push("/");
+    }
+  };
+
+  useEffect(() => {
+    loginStatus();
+  }, []);
   const columns = [
     {
-      title: "Sr ",
+      title: "Sr",
+      key: "index",
       width: 100,
-      //return:(index)=> index + 1 ,
-      dataIndex: "i",
-      key: "i",
+      render: (text, record, index) => <b>{index + 1}</b>,
     },
+
     {
       title: "Name",
       width: 100,
@@ -55,9 +66,16 @@ export const Datatabel = () => {
       width: 100,
       render: (_id) => (
         <a>
-          <button type="button" className="btn btn-primary">
-            Edit{_id}
+          <button
+            onClick={() => {
+              editUserId(_id);
+            }}
+            type="button"
+            className="btn btn-primary "
+          >
+            Edit
           </button>
+
           <button
             onClick={() => {
               const confirmBox = window.confirm(
@@ -68,7 +86,7 @@ export const Datatabel = () => {
               }
             }}
             type="button"
-            className="btn btn-danger"
+            className="btn btn-danger my-1"
           >
             Delete
           </button>
@@ -79,25 +97,30 @@ export const Datatabel = () => {
 
   const [user, setUser] = useState();
   const [page, setPage] = useState(1000);
-  const search = {
+
+  //Search user by name and number
+  const searchUser = {
     page: 1,
     limit: page,
     search: "",
     phonenumber: "",
-  }
+  };
+  const [searchUse, setSearchUse] = useState(searchUser);
+  const { search, phonenumber } = searchUse;
 
-  //delele User Functions
-  const deleteUser = (_id) => {
-    const deleteUrl = `http://192.168.1.196:8090/api/user/delete-user/${_id}`;
-    axios
-      .delete(deleteUrl, {
-        headers: {
-          Authorization: "bearer " + localStorage.getItem("token"),
-        },
-      })
-      .then((response) => {
-        console.log(response.data.data);
-      });
+  const onSearch = (e) => {
+    setSearchUse({ ...searchUse, [e.target.name]: e.target.value });
+    console.log(`search value`, searchUse);
+    if (e.target.value === "") {
+      listData();
+    }
+  };
+
+  const onSearchsubmit = (e) => {
+    e.preventDefault();
+    Pagination.phonenumber = searchUse.phonenumber;
+    Pagination.search = searchUse.search;
+    listData();
   };
 
   //getUserList
@@ -123,44 +146,78 @@ export const Datatabel = () => {
     listData();
   }, []);
 
-  //Logout Function
-  const userLogout = useHistory();
-  const logOut = () => {
-    localStorage.clear("token");
-    userLogout.push("/");
+  //delele User Functions
+  const deleteUser = (_id) => {
+    const deleteUrl = `http://192.168.1.196:8090/api/user/delete-user/${_id}`;
+    axios
+      .delete(deleteUrl, {
+        headers: {
+          Authorization: "bearer " + localStorage.getItem("token"),
+        },
+      })
+      .then((response) => {
+        console.log(response.data.data);
+        listData();
+      });
+  };
+
+  //Edit User
+  // const history = useHistory();
+  const editUserId = (_id) => {
+    history.push("/edituser/" + _id);
+  };
+
+  const addUser = useHistory();
+  const addNewUser = () => {
+    addUser.push("/AddUser");
   };
 
   return (
     <div>
       <Nav />
-      <nav class="navbar navbar-light bg-light justify-content-between">
-        <h5>
+      <nav className="navbar navbar-light bg-light justify-content-between">
+        <h5 className="sticky-top">
           <b>Welcome have a Good Day</b>
         </h5>
-        <form class="form-inline">
+        <form className="form-inline">
+          {/* Search by name  */}
           <input
-            class="form-control mr-sm-2"
+            onChange={onSearch}
+            value={search}
+            name="search"
+            className="form-control mr-sm-2"
             type="search"
-            placeholder="Search"
+            placeholder="Search by Name"
             aria-label="Search"
           />
-          <button class="btn btn-outline-success my-1  mx-1" type="submit">
+          {/* Search by number  */}
+          <input
+            onChange={onSearch}
+            value={phonenumber}
+            name="phonenumber"
+            className="form-control mr-sm-2 my-2"
+            type="search"
+            placeholder="Search by Number"
+            aria-label="Search"
+          />
+
+          <button
+            onClick={onSearchsubmit}
+            className="btn btn-outline-success my-1  mx-1"
+            type="submit"
+          >
             Search
           </button>
 
-          <button type="button" className="btn btn-primary my-1 mx-2">
-            Adduser
-          </button>
           <button
-            onClick={logOut}
+            onClick={addNewUser}
             type="button"
-            className="btn btn-danger my-1 mx-2"
+            className="btn btn-primary  mx-2"
           >
-            Logout
+            Adduser
           </button>
         </form>
       </nav>
-
       <Table columns={columns} dataSource={user} />
     </div>
   );
